@@ -269,6 +269,10 @@ NanoAODOutputModule::openFile(edm::FileBlock const&) {
       m_file->SetCompressionAlgorithm(ROOT::kZLIB);
     } else if (m_compressionAlgorithm == std::string("LZMA")) {
       m_file->SetCompressionAlgorithm(ROOT::kLZMA);
+    } else if (m_compressionAlgorithm == std::string("ZLIB")) {
+      m_file->SetCompressionAlgorithm(ROOT::kZLIB);
+    } else if (m_compressionAlgorithm == std::string("LZ4")) {
+      m_file->SetCompressionAlgorithm(ROOT::kLZ4);
     } else {
       throw cms::Exception("Configuration") << "NanoAODOutputModule configured with unknown compression algorithm '" << m_compressionAlgorithm << "'\n"
 					     << "Allowed compression algorithms are ZLIB and LZMA\n";
