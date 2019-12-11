@@ -271,23 +271,23 @@ class GenWeightsTableProducer : public edm::global::EDProducer<edm::StreamCache<
                 if (lheDebug) printf("Weight  %+9.5f   rel %+9.5f   for id %s\n", weight.wgt, weight.wgt/w0,  weight.id.c_str());
                 // now we do it slowly, can be optimized
                 auto mScale = std::find(scaleWeightIDs.begin(), scaleWeightIDs.end(), weight.id);
-                if (mScale != scaleWeightIDs.end()) wScale[mScale-scaleWeightIDs.begin()] = weight.wgt/w0;
+                if (mScale != scaleWeightIDs.end()) wScale[mScale-scaleWeightIDs.begin()] = weight.wgt/w0 - 1;
 
                 auto mPDF = std::find(pdfWeightIDs.begin(), pdfWeightIDs.end(), weight.id);
-                if (mPDF != pdfWeightIDs.end()) wPDF[mPDF-pdfWeightIDs.begin()] = weight.wgt/w0;
+                if (mPDF != pdfWeightIDs.end()) wPDF[mPDF-pdfWeightIDs.begin()] = weight.wgt/w0 - 1;
 
                 auto mRwgt = std::find(rwgtWeightIDs.begin(), rwgtWeightIDs.end(), weight.id);
-                if (mRwgt != rwgtWeightIDs.end()) wRwgt[mRwgt-rwgtWeightIDs.begin()] = weight.wgt/w0;
+                if (mRwgt != rwgtWeightIDs.end()) wRwgt[mRwgt-rwgtWeightIDs.begin()] = weight.wgt/w0 - 1;
 
                 auto mNamed = std::find(namedWeightIDs_.begin(), namedWeightIDs_.end(), weight.id);
-                if (mNamed != namedWeightIDs_.end()) wNamed[mNamed-namedWeightIDs_.begin()] = weight.wgt/w0;
+                if (mNamed != namedWeightIDs_.end()) wNamed[mNamed-namedWeightIDs_.begin()] = weight.wgt/w0 - 1;
             } 
 
-            int vectorSize = (genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
+            unsigned int vectorSize = genProd.weights().size(); //(genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
             std::vector<double> wPS(vectorSize, 1);
             if (vectorSize > 1 ) {
-                for (unsigned int i=6; i<10; i++){
-                    wPS[i-6] = (genProd.weights()[i])/w0;
+                for (unsigned int i=0; i<vectorSize; i++){
+                    wPS[i] = (genProd.weights()[i])/w0 - 1;
                 }
             }
             outPS.reset(new nanoaod::FlatTable(wPS.size(), "PSWeight", false));
@@ -317,12 +317,12 @@ class GenWeightsTableProducer : public edm::global::EDProducer<edm::StreamCache<
                 const GenEventInfoProduct & genProd,
                 std::unique_ptr<nanoaod::FlatTable> & outPS ) const
         {
-            int vectorSize = (genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
+            unsigned int vectorSize = genProd.weights().size(); //(genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
 
             std::vector<double> wPS(vectorSize, 1);
             if (vectorSize > 1 ){
-                for (unsigned int i=6; i<10; i++){
-                    wPS[i-6] = (genProd.weights()[i])/genWeight;
+                for (unsigned int i=0; i<vectorSize; i++){
+                    wPS[i] = (genProd.weights()[i])/genWeight - 1;
                 }
             }
 
