@@ -90,7 +90,7 @@ muonMVALowPt = muonMVATTH.clone(
 
 muonMVATTV= cms.EDProducer("MuonBaseMVAValueMapProducer",
     src = cms.InputTag("linkedObjects","muons"),
-    weightFile =  cms.FileInPath("Samples/Tools/data/leptonMVA/mu_BDTG_TTV_2017.weights.xml"),
+    weightFile =  cms.FileInPath("PhysicsTools/NanoAOD/data/mu_BDTG_TTV_2017.weights.xml"),
     name = cms.string("muonMVATTV"),
     isClassifier = cms.bool(True),
     variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "segmentCompatibility"]),
@@ -116,7 +116,7 @@ for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
         weightFile = "PhysicsTools/NanoAOD/data/mu_BDTG_2016.weights.xml",
     )
     modifier.toModify(muonMVATTV,
-        weightFile = "Samples/Tools/data/leptonMVA/mu_BDTG_TTV_2016.weights.xml",
+        weightFile = "PhysicsTools/NanoAOD/data/mu_BDTG_TTV_2016.weights.xml",
     )
 
 from MuonAnalysis.MuonAssociators.muonFSRProducer_cfi import muonFSRProducer

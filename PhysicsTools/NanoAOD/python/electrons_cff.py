@@ -306,7 +306,7 @@ electronMVATTH= cms.EDProducer("EleBaseMVAValueMapProducer",
 
 electronMVATTV = cms.EDProducer("EleBaseMVAValueMapProducer",
     src = cms.InputTag("linkedObjects","electrons"),
-    weightFile =  cms.FileInPath("Samples/Tools/data/leptonMVA/el_BDTG_TTV_2017.weights.xml"),
+    weightFile =  cms.FileInPath("PhysicsTools/NanoAOD/data/el_BDTG_TTV_2017.weights.xml"),
     name = cms.string("electronMVATTV"),
     isClassifier = cms.bool(True),
     variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "electronMvaFall17NoIso"]),
@@ -333,7 +333,7 @@ for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
       weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
     )
     modifier.toModify(electronMVATTV,
-      weightFile = "Samples/Tools/data/leptonMVA/el_BDTG_TTV_2016.weights.xml",
+      weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_TTV_2016.weights.xml",
     )
     modifier.toModify(electronMVATTV.variables,
       electronMvaSpring16GP = cms.string("userFloat('ElectronMVAEstimatorRun2Spring16GeneralPurposeV1Values')"),
