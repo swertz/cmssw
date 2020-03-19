@@ -303,10 +303,44 @@ electronMVATTH= cms.EDProducer("EleBaseMVAValueMapProducer",
         LepGood_mvaFall17V2noIso = cms.string("userFloat('mvaFall17V2noIso')"),
     )
 )
-for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
-  modifier.toModify(electronMVATTH,
-    weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
+
+electronMVATTV = cms.EDProducer("EleBaseMVAValueMapProducer",
+    src = cms.InputTag("linkedObjects","electrons"),
+    weightFile =  cms.FileInPath("Samples/Tools/data/leptonMVA/el_BDTG_TTV_2017.weights.xml"),
+    name = cms.string("electronMVATTV"),
+    isClassifier = cms.bool(True),
+    variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "electronMvaFall17NoIso"]),
+    variables = cms.PSet(
+        pt = cms.string("pt"),
+        eta = cms.string("eta"),
+        trackMultClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0"),
+        miniIsoCharged = cms.string("userFloat('miniIsoChg')/pt"),
+        miniIsoNeutral = cms.string("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt"),
+        pTRel = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('ptRel'):0"),
+        ptRatio = cms.string("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)"),
+        relIso = cms.string("userFloat('PFIsoAll')/pt"),
+        deepCsvClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probbb'),0.0):0.0"),
+        sip3d = cms.string("abs(dB('PV3D')/edB('PV3D'))"),
+        dxy = cms.string("log(abs(dB('PV2D')))"),
+        dz = cms.string("log(abs(dB('PVDZ')))"),
+        #electronMvaFall17NoIso = cms.string("userFloat('ElectronMVAEstimatorRun2Fall17NoIsoV2Values')"),
+        electronMvaFall17NoIso = cms.string("userFloat('mvaFall17V2noIso')"),
+    )
 )
+
+for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
+    modifier.toModify(electronMVATTH,
+      weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
+    )
+    modifier.toModify(electronMVATTV,
+      weightFile = "Samples/Tools/data/leptonMVA/el_BDTG_TTV_2016.weights.xml",
+    )
+    modifier.toModify(electronMVATTV.variables,
+      electronMvaSpring16GP = cms.string("userFloat('ElectronMVAEstimatorRun2Spring16GeneralPurposeV1Values')"),
+    )
+    modifier.toModify(electronMVATTV,
+      variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "electronMvaSpring16GP"])
+    )
 
 electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     src = cms.InputTag("linkedObjects","electrons"),
@@ -369,9 +403,15 @@ electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
         isPFcand = Var("pfCandidateRef().isNonnull()",bool,doc="electron is PF candidate"),
         seedGain = Var("userInt('seedGain')","uint8",doc="Gain of the seed crystal"),
+        jetNDauChargedMVASel = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0", float, doc="jetNDauChargedMVASel"),
+        miniPFRelIso_neu = Var("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt", float, doc="mini PF relative isolation, neutral component"),
+        jetDeepFlavor = Var("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0", float, doc="DeepFlavour b-tag of associated jet"),
+        jetDeepCSV = Var("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probbb'),0.0):0.0", float, doc="DeepCSV tag of associated jet"),
+        jetPtRatio = Var("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)", float, doc="ptRatio calculated from associated jet"),
     ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("electronMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
+        mvaTTV = ExtVar(cms.InputTag("electronMVATTV"),float, doc="TTV MVA lepton ID score",precision=14),
     ),
 )
 # scale and smearing only when available
@@ -380,6 +420,9 @@ for modifier in run2_nanoAOD_94X2016,:
         pt = Var("pt*userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, precision=-1, doc="p_{T}"),
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorr')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, doc="ratio of the calibrated energy/miniaod energy"),
+    )
+    modifier.toModify(electronTable.variables,
+        mvaSpring16GP = Var("userFloat('ElectronMVAEstimatorRun2Spring16GeneralPurposeV1Values')", float, doc="MVA Spring16 GP V1"),
     )
 
 #the94X miniAOD V2 had a bug in the scale and smearing for electrons in the E/p comb
@@ -453,7 +496,7 @@ electronMCTable = cms.EDProducer("CandMCMatchTableProducer",
 )
 
 electronSequence = cms.Sequence(bitmapVIDForEle + bitmapVIDForEleHEEP + isoForEle + ptRatioRelForEle + seedGainEle + slimmedElectronsWithUserData + finalElectrons)
-electronTables = cms.Sequence (electronMVATTH + electronTable)
+electronTables = cms.Sequence (electronMVATTH + electronMVATTV + electronTable)
 electronMC = cms.Sequence(electronsMCMatchForTable + electronMCTable)
 
 _withUpdate_sequence = cms.Sequence(slimmedElectronsUpdated + electronSequence.copy())
