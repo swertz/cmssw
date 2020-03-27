@@ -283,15 +283,16 @@ class GenWeightsTableProducer : public edm::global::EDProducer<edm::StreamCache<
                 if (mNamed != namedWeightIDs_.end()) wNamed[mNamed-namedWeightIDs_.begin()] = weight.wgt/w0 - 1;
             } 
 
-            unsigned int vectorSize = genProd.weights().size(); //(genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
+            unsigned int vectorSize = genProd.weights().size();
             std::vector<double> wPS(vectorSize, 1);
-            if (vectorSize > 1 ) {
-                for (unsigned int i=0; i<vectorSize; i++){
-                    wPS[i] = (genProd.weights()[i])/w0 - 1;
+            if (vectorSize > 2) {
+                double nominal = genProd.weights()[1];
+                for (unsigned int i=0; i<vectorSize; i++) {
+                    wPS[i] = (genProd.weights()[i]) / nominal - 1;
                 }
             }
             outPS.reset(new nanoaod::FlatTable(wPS.size(), "PSWeight", false));
-            outPS->addColumn<float>("", wPS, vectorSize > 1 ? "PS weights (w_var / w_nominal); [0] is ISR=0.5 FSR=1; [1] is ISR=1 FSR=0.5; [2] is ISR=2 FSR=1; [3] is ISR=1 FSR=2 " : "dummy PS weight (1.0) ", nanoaod::FlatTable::FloatColumn, lheWeightPrecision_);
+            outPS->addColumn<float>("", wPS, vectorSize > 1 ? "PS weights (w_var / w_nominal)" : "dummy PS weight (1.0) ", nanoaod::FlatTable::FloatColumn, lheWeightPrecision_);
 
             outScale.reset(new nanoaod::FlatTable(wScale.size(), "LHEScaleWeight", false));
             outScale->addColumn<float>("", wScale, weightChoice->scaleWeightsDoc, nanoaod::FlatTable::FloatColumn, lheWeightPrecision_); 
@@ -317,17 +318,18 @@ class GenWeightsTableProducer : public edm::global::EDProducer<edm::StreamCache<
                 const GenEventInfoProduct & genProd,
                 std::unique_ptr<nanoaod::FlatTable> & outPS ) const
         {
-            unsigned int vectorSize = genProd.weights().size(); //(genProd.weights().size() == 14 || genProd.weights().size() == 46) ? 4 : 1;
+            unsigned int vectorSize = genProd.weights().size();
 
             std::vector<double> wPS(vectorSize, 1);
-            if (vectorSize > 1 ){
+            if (vectorSize > 2){
+                double nominal = genProd.weights()[1];
                 for (unsigned int i=0; i<vectorSize; i++){
-                    wPS[i] = (genProd.weights()[i])/genWeight - 1;
+                    wPS[i] = (genProd.weights()[i]) / nominal - 1;
                 }
             }
 
             outPS.reset(new nanoaod::FlatTable(wPS.size(), "PSWeight", false));
-            outPS->addColumn<float>("", wPS, vectorSize > 1 ? "PS weights (w_var / w_nominal); [0] is ISR=0.5 FSR=1; [1] is ISR=1 FSR=0.5; [2] is ISR=2 FSR=1; [3] is ISR=1 FSR=2 " : "dummy PS weight (1.0) " , nanoaod::FlatTable::FloatColumn, lheWeightPrecision_);
+            outPS->addColumn<float>("", wPS, vectorSize > 1 ? "PS weights (w_var / w_nominal)" : "dummy PS weight (1.0) " , nanoaod::FlatTable::FloatColumn, lheWeightPrecision_);
 
             counter->incGenOnly(genWeight);
             counter->incPSOnly(genWeight,wPS);
