@@ -12,9 +12,8 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
 #include "DataFormats/JetReco/interface/GenJet.h"
-#include "SimDataFormats/JetMatching/interface/JetFlavourInfo.h"
-#include "SimDataFormats/JetMatching/interface/JetFlavourInfoMatching.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "SimDataFormats/JetMatching/interface/JetFlavourInfo.h"
 
 #include "DataFormats/NanoAOD/interface/FlatTable.h"
 
@@ -31,23 +30,12 @@ class GenJetBFragWeightTableProducer : public edm::stream::EDProducer<> {
             deltaR_(iConfig.getParameter<double>("deltaR"))
         {
             for (const auto& tag: iConfig.getParameter<std::vector<edm::InputTag>>("weightSrc")) {
-                std::cout << "adding weight " << tag.instance() << std::endl;
                 weightsToken_.emplace(tag.instance(), consumes<edm::ValueMap<float>>(tag));
             }
             produces<nanoaod::FlatTable>();
         }
 
         ~GenJetBFragWeightTableProducer() override {};
-
-        //static void fillDescriptions(edm::ConfigurationDescriptions & descriptions) {
-            //edm::ParameterSetDescription desc;
-            //desc.add<edm::InputTag>("src")->setComment("input genJet collection");
-            //desc.add<edm::InputTag>("jetFlavourInfos")->setComment("input flavour info collection");
-            //desc.add<std::string>("name")->setComment("name of the genJet FlatTable we are extending with flavour information");
-            //desc.add<std::string>("cut")->setComment("cut on input genJet collection");
-            //desc.add<double>("deltaR")->setComment("deltaR to match genjets");
-            //descriptions.add("genJetFlavourTable", desc);
-        //}
 
     private:
         void produce(edm::Event&, edm::EventSetup const&) override ;
@@ -83,34 +71,47 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
     }
     
     unsigned int ncand = 0;
-    unsigned int nmatch = 0;
     
     for (const reco::GenJet & jet : *jets) {
       if (!cut_(jet)) continue;
       ++ncand;
       std::map<std::string, float> theseWeights;
-      for (const auto& wgt_handle: weightHandles)  
-        theseWeights[wgt_handle.first] = -1000.;
+      for (const auto& wgt: outWeights) {
+        theseWeights[wgt.first] = -1000.;
+      }
+
+      std::size_t bestJetIdx;
+      float bestDR = 999.;
     
       for (const reco::GenJet & jetWithNu : *jetsWithNu) {
         edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, &jetWithNu - &(*jetsWithNu->begin()));
 
-        if (deltaR(jet.p4(), jetWithNu.p4()) < deltaR_) {
-          for (const auto& wgt_handle: weightHandles)  
-            theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
-          nmatch++;
-          break;
-        }
+        float matchDR = deltaR(jet.p4(), jetWithNu.p4());
 
+        if (matchDR < bestDR) {
+            bestDR = matchDR;
+            bestJetIdx = &jetWithNu - &(*jetsWithNu->begin());
+        }
+      } // end loop on genJetsWithNu
+        
+      const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
+      edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
+
+      if (bestDR < deltaR_) {
+        for (const auto& wgt_handle: weightHandles) {
+          theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
+        }
       }
 
-      for (const auto& wgt_table: outWeights)
+      for (const auto& wgt_table: outWeights) {
         outWeights[wgt_table.first].push_back(theseWeights[wgt_table.first]);
-    }
+      }
+    } // end loop on genJets
 
-    auto tab  = std::make_unique<nanoaod::FlatTable>(ncand, name_, false, true);
-    for (const auto& wgt_table: outWeights)
-      tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight" + wgt_table.first, nanoaod::FlatTable::FloatColumn, 8);
+    auto tab = std::make_unique<nanoaod::FlatTable>(ncand, name_, false, true);
+    for (const auto& wgt_table: outWeights) {
+      tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight: " + wgt_table.first, nanoaod::FlatTable::FloatColumn, 8);
+    }
 
     iEvent.put(std::move(tab));
 }
