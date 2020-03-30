@@ -150,7 +150,7 @@ genCHadBHadronIdToken_(consumes<std::vector<int> >(iConfig.getParameter<edm::Inp
     produces<int>("genTtbarId");
     addBranches_ = { "nBHadFromTop", "nBHadFromW", "nBHadOther", "nCHadFromW", "nCHadOther" };
     for (const std::string& br: addBranches_)
-        produces<edm::ValueMap<uint8_t>>(br);
+        produces<edm::ValueMap<int>>(br);
 }
 
 
@@ -225,9 +225,9 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     
     //std::unique_ptr<std::vector<int>> nBHadFromTop(new std::vector<int>(genJets->size(), 0));
     //std::vector<int> nBHadFromTop(genJets->size(), 0);
-    std::map<std::string, std::vector<uint8_t>> countMap;
+    std::map<std::string, std::vector<int>> countMap;
     for (const std::string& br: addBranches_)
-        countMap.emplace(br, std::vector<uint8_t>(genJets->size(), 0));
+        countMap.emplace(br, std::vector<int>(genJets->size(), 0));
     
     // Count number of specific b hadrons in each jet
     for(size_t hadronId = 0; hadronId < genBHadIndex->size(); ++hadronId) {
@@ -376,8 +376,8 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     iEvent.put(std::move(ttbarId), "genTtbarId");
 
     for (const std::string& br: addBranches_) {
-        std::unique_ptr<edm::ValueMap<uint8_t>> valMap(new edm::ValueMap<uint8_t>());
-        typename edm::ValueMap<uint8_t>::Filler filler(*valMap);
+        std::unique_ptr<edm::ValueMap<int>> valMap(new edm::ValueMap<int>());
+        typename edm::ValueMap<int>::Filler filler(*valMap);
         filler.insert(genJets, countMap[br].begin(), countMap[br].end());
         filler.fill();
         iEvent.put(std::move(valMap), br);
