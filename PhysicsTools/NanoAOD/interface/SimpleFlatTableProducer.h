@@ -21,16 +21,18 @@ class SimpleFlatTableProducerBase : public edm::stream::EDProducer<> {
             extension_(params.existsAs<bool>("extension") ? params.getParameter<bool>("extension") : false),
             src_(consumes<TProd>( params.getParameter<edm::InputTag>("src") )) 
         {
-            edm::ParameterSet const & varsPSet = params.getParameter<edm::ParameterSet>("variables");
-            for (const std::string & vname : varsPSet.getParameterNamesForType<edm::ParameterSet>()) {
-                const auto & varPSet = varsPSet.getParameter<edm::ParameterSet>(vname);
-                const std::string & type = varPSet.getParameter<std::string>("type");
-                if (type == "int") vars_.push_back(new IntVar(vname, nanoaod::FlatTable::IntColumn, varPSet));
-                else if (type == "float") vars_.push_back(new FloatVar(vname, nanoaod::FlatTable::FloatColumn, varPSet));
-                else if (type == "uint8") vars_.push_back(new UInt8Var(vname, nanoaod::FlatTable::UInt8Column, varPSet));
-                else if (type == "bool") vars_.push_back(new BoolVar(vname, nanoaod::FlatTable::BoolColumn, varPSet));
-                else throw cms::Exception("Configuration", "unsupported type "+type+" for variable "+vname);
-            }
+            if (params.existsAs<edm::ParameterSet>("variables")) {
+				edm::ParameterSet const & varsPSet = params.getParameter<edm::ParameterSet>("variables");
+				for (const std::string & vname : varsPSet.getParameterNamesForType<edm::ParameterSet>()) {
+					const auto & varPSet = varsPSet.getParameter<edm::ParameterSet>(vname);
+					const std::string & type = varPSet.getParameter<std::string>("type");
+					if (type == "int") vars_.push_back(new IntVar(vname, nanoaod::FlatTable::IntColumn, varPSet));
+					else if (type == "float") vars_.push_back(new FloatVar(vname, nanoaod::FlatTable::FloatColumn, varPSet));
+					else if (type == "uint8") vars_.push_back(new UInt8Var(vname, nanoaod::FlatTable::UInt8Column, varPSet));
+					else if (type == "bool") vars_.push_back(new BoolVar(vname, nanoaod::FlatTable::BoolColumn, varPSet));
+					else throw cms::Exception("Configuration", "unsupported type "+type+" for variable "+vname);
+				}
+			}
 
             produces<nanoaod::FlatTable>();
         }
