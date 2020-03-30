@@ -114,6 +114,7 @@ class GenTtbarCategorizer : public edm::EDProducer {
         const edm::EDGetTokenT<std::vector<int> > genCHadFromTopWeakDecayToken_;
         const edm::EDGetTokenT<std::vector<int> > genCHadBHadronIdToken_;
         
+        std::vector<std::string> addBranches_;
         
 };
 
@@ -147,6 +148,9 @@ genCHadFromTopWeakDecayToken_(consumes<std::vector<int> >(iConfig.getParameter<e
 genCHadBHadronIdToken_(consumes<std::vector<int> >(iConfig.getParameter<edm::InputTag>("genCHadBHadronId")))
 {
     produces<int>("genTtbarId");
+    addBranches_ = { "nBHadFromTop", "nBHadFromW", "nBHadOther", "nCHadFromW", "nCHadOther" };
+    for (const std::string& br: addBranches_)
+        produces<edm::ValueMap<uint8_t>>(br);
 }
 
 
@@ -219,6 +223,11 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     // C jets with c hadrons before top quark decay chain
     std::map<int, int> cJetAdditionalIds;
     
+    //std::unique_ptr<std::vector<int>> nBHadFromTop(new std::vector<int>(genJets->size(), 0));
+    //std::vector<int> nBHadFromTop(genJets->size(), 0);
+    std::map<std::string, std::vector<uint8_t>> countMap;
+    for (const std::string& br: addBranches_)
+        countMap.emplace(br, std::vector<uint8_t>(genJets->size(), 0));
     
     // Count number of specific b hadrons in each jet
     for(size_t hadronId = 0; hadronId < genBHadIndex->size(); ++hadronId) {
@@ -235,17 +244,20 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         if(std::abs(flavour) == 6) {
             if(bJetFromTopIds.count(jetIndex) < 1) bJetFromTopIds[jetIndex] = 1;
             else bJetFromTopIds[jetIndex]++;
+            countMap["nBHadFromTop"][jetIndex]++;
             continue;
         }
         // Jet from W->b decay [pdgId(W)=24]
         if(std::abs(flavour) == 24) {
             if(bJetFromWIds.count(jetIndex) < 1) bJetFromWIds[jetIndex] = 1;
             else bJetFromWIds[jetIndex]++;
+            countMap["nBHadFromW"][jetIndex]++;
             continue;
         }
         // Identify jets with b hadrons not from top-quark or W-boson decay
         if(bJetAdditionalIds.count(jetIndex) < 1) bJetAdditionalIds[jetIndex] = 1;
         else bJetAdditionalIds[jetIndex]++;
+        countMap["nBHadOther"][jetIndex]++;
     }
     
     // Cleaning up b jets from W->b decays
@@ -275,21 +287,27 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         // Skip if jet is not in acceptance
         if(genJets->at(jetIndex).pt() < genJetPtMin_) continue;
         if(std::fabs(genJets->at(jetIndex).eta()) > genJetAbsEtaMax_) continue;
-        // Skip if jet contains a b hadron
-        if(bJetFromTopIds.count(jetIndex) > 0) continue;
-        if(bJetFromWIds.count(jetIndex) > 0) continue;
-        if(bJetAdditionalIds.count(jetIndex) > 0) continue;
+        // Jet contains a b hadron?
+        bool hasBHadron = (bJetFromTopIds.count(jetIndex) > 0) || (bJetFromWIds.count(jetIndex) > 0) || (bJetAdditionalIds.count(jetIndex) > 0);
         // Flavour of the hadron's origin
         const int flavour = genCHadFlavour->at(hadronId);
         // Jet from W->c decay [pdgId(W)=24]
         if(std::abs(flavour) == 24) {
-            if(cJetFromWIds.count(jetIndex) < 1) cJetFromWIds[jetIndex] = 1;
-            else cJetFromWIds[jetIndex]++;
+            // only count jets which don't have a B hadron
+            if (!hasBHadron) {
+                if(cJetFromWIds.count(jetIndex) < 1) cJetFromWIds[jetIndex] = 1;
+                else cJetFromWIds[jetIndex]++;
+            }
+            // here we do want all the matched C hadrons, just in case
+            countMap["nCHadFromW"][jetIndex]++;
             continue;
         }
-        // Identify jets with c hadrons not from W-boson decay
-        if(cJetAdditionalIds.count(jetIndex) < 1) cJetAdditionalIds[jetIndex] = 1;
-        else cJetAdditionalIds[jetIndex]++;
+        if (!hasBHadron) {
+            // Identify jets with c hadrons not from W-boson decay
+            if(cJetAdditionalIds.count(jetIndex) < 1) cJetAdditionalIds[jetIndex] = 1;
+            else cJetAdditionalIds[jetIndex]++;
+        }
+        countMap["nBHadOther"][jetIndex]++;
     }
 
     // Cleaning up additional c jets
@@ -352,10 +370,18 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
             additionalJetEventId += 0;
         }
     }
-    
+
     std::unique_ptr<int> ttbarId(new int);
     *ttbarId = additionalJetEventId;
     iEvent.put(std::move(ttbarId), "genTtbarId");
+
+    for (const std::string& br: addBranches_) {
+        std::unique_ptr<edm::ValueMap<uint8_t>> valMap(new edm::ValueMap<uint8_t>());
+        typename edm::ValueMap<uint8_t>::Filler filler(*valMap);
+        filler.insert(genJets, countMap[br].begin(), countMap[br].end());
+        filler.fill();
+        iEvent.put(std::move(valMap), br);
+    }
 }
 
 // ------------ method called once each job just before starting event loop  ------------
