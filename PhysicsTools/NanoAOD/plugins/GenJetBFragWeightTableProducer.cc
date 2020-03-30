@@ -77,7 +77,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
       ++ncand;
       std::map<std::string, float> theseWeights;
       for (const auto& wgt: outWeights) {
-        theseWeights[wgt.first] = -1000.;
+        theseWeights[wgt.first] = 0.;
       }
 
       std::size_t bestJetIdx;
@@ -94,7 +94,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
         }
       } // end loop on genJetsWithNu
         
-      const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
+      //const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
       edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
 
       if (bestDR < deltaR_) {
