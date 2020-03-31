@@ -307,7 +307,7 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
             if(cJetAdditionalIds.count(jetIndex) < 1) cJetAdditionalIds[jetIndex] = 1;
             else cJetAdditionalIds[jetIndex]++;
         }
-        countMap["nBHadOther"][jetIndex]++;
+        countMap["nCHadOther"][jetIndex]++;
     }
 
     // Cleaning up additional c jets
