@@ -27,7 +27,8 @@ class GenJetBFragWeightTableProducer : public edm::stream::EDProducer<> {
             jetsToken_(consumes<std::vector<reco::GenJet> >(iConfig.getParameter<edm::InputTag>("genJets"))),
             jetsWithNuToken_(consumes<std::vector<reco::GenJet> >(iConfig.getParameter<edm::InputTag>("genJetsWithNu"))),
             cut_(iConfig.getParameter<std::string>("cut"), true),
-            deltaR_(iConfig.getParameter<double>("deltaR"))
+            deltaR_(iConfig.getParameter<double>("deltaR")),
+            precision_(iConfig.getParameter<int>("precision"))
         {
             for (const auto& tag: iConfig.getParameter<std::vector<edm::InputTag>>("weightSrc")) {
                 weightsToken_.emplace(tag.instance(), consumes<edm::ValueMap<float>>(tag));
@@ -40,11 +41,12 @@ class GenJetBFragWeightTableProducer : public edm::stream::EDProducer<> {
     private:
         void produce(edm::Event&, edm::EventSetup const&) override ;
 
-        std::string name_;
+        const std::string name_;
         edm::EDGetTokenT<std::vector<reco::GenJet> > jetsToken_;
         edm::EDGetTokenT<std::vector<reco::GenJet> > jetsWithNuToken_;
         const StringCutObjectSelector<reco::GenJet> cut_;
         const double deltaR_;
+        const int precision_;
         std::map<std::string, edm::EDGetTokenT<edm::ValueMap<float>> > weightsToken_;
 
 
@@ -80,7 +82,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
         theseWeights[wgt.first] = 0.;
       }
 
-      std::size_t bestJetIdx;
+      int bestJetIdx = -1;
       float bestDR = 999.;
     
       for (const reco::GenJet & jetWithNu : *jetsWithNu) {
@@ -93,13 +95,15 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
             bestJetIdx = &jetWithNu - &(*jetsWithNu->begin());
         }
       } // end loop on genJetsWithNu
-        
-      //const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
-      edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
 
-      if (bestDR < deltaR_) {
-        for (const auto& wgt_handle: weightHandles) {
-          theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
+      if (bestJetIdx >= 0) {
+        //const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
+        edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
+
+        if (bestDR < deltaR_) {
+          for (const auto& wgt_handle: weightHandles) {
+            theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
+          }
         }
       }
 
@@ -110,7 +114,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
 
     auto tab = std::make_unique<nanoaod::FlatTable>(ncand, name_, false, true);
     for (const auto& wgt_table: outWeights) {
-      tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight: " + wgt_table.first, nanoaod::FlatTable::FloatColumn, 8);
+      tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight: " + wgt_table.first, nanoaod::FlatTable::FloatColumn, precision_);
     }
 
     iEvent.put(std::move(tab));
