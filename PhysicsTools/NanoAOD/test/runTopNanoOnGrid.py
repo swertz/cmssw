@@ -9,9 +9,41 @@ import os
 import argparse
 import sys
 
+# DAS client
+from Utilities.General.cmssw_das_client import get_data as myDASclient
+
 CMSSW_ROOT = os.path.join(os.environ['CMSSW_BASE'], 'src')
 NANO_ROOT = os.path.join(os.environ['CMSSW_BASE'], 'src', 'PhysicsTools', 'NanoAOD')
 PROD_TAG = "v6p1"
+
+def retry(nattempts, exception=None):
+    """
+    Decorator allowing to retry an action several times before giving up.
+    @params:
+        nattempts  - Required: maximal number of attempts (Int)
+        exception  - Optional: if given, only catch this exception, otherwise catch 'em all (Exception)
+    """
+    
+    def tryIt(func):
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < nattempts - 1:
+                try:
+                    return func(*args, **kwargs)
+                except (exception if exception is not None else Exception):
+                    attempts += 1
+            return func(*args, **kwargs)
+        return wrapper
+    return tryIt
+
+@retry(5)
+def get_parent_DAS(dataset):
+    """Retrieve parent dataset from DAS"""
+    data = myDASclient("parent dataset=" + dataset)
+    assert(len(data['data']) == 1)
+    assert(len(data['data'][0]['parent']) == 1)
+    return data['data'][0]['parent'][0]['name']
+
 
 def get_options():
     """
@@ -67,7 +99,7 @@ def writeCrabConfig(pset, dataset, metadata, era, crab_config, site, output):
 
     c.JobType.psetName = pset
 
-    name = metadata['name']
+    name = metadata.pop('name')
 
     c.General.requestName = "TopNanoAOD{}_{}__{}".format(PROD_TAG, name, era)
     
@@ -76,20 +108,11 @@ def writeCrabConfig(pset, dataset, metadata, era, crab_config, site, output):
     c.Data.outLFNDirBase = '/store/user/{user}/topNanoAOD/{tag}/{era}/'.format(user=os.getenv('USER'), tag=PROD_TAG, era=era)
     c.Site.storageSite = site
 
-    # Some jobs may request more memory
-    if 'memory' in metadata:
-        c.JobType.maxMemoryMB = metadata['memory']
-    if 'inputDBS' in metadata:
-        c.Data.inputDBS = metadata["inputDBS"]
-    if 'splitting' in metadata:
-        c.Data.splitting = metadata["splitting"]
-    if 'unitsPerJob' in metadata:
-        c.Data.unitsPerJob = metadata["unitsPerJob"]
-    if "max_runtime" in metadata:
-        c.JobType.maxJobRuntimeMin = metadata["max_runtime"]
+    # customize if asked
+    for attr,val in metadata.items():
+        setattr(getattr(c, attr.split(".")[0]), attr.split(".")[1], val)
 
     print("Creating new task {}".format(c.General.requestName))
-    print("\tDataset: ".format(dataset))
 
     # Create output file
     crab_config_file = os.path.join(output, 'crab_' + c.General.requestName + '.py')
@@ -120,5 +143,14 @@ if __name__ == "__main__":
             continue
 
         for dataset, metadata in era_datasets.items():
+            print("Working on {}".format(dataset))
+            if dataset.endswith("NANOAODSIM"):
+                print("Will convert from nano to mini!")
+                dataset = get_parent_DAS(dataset)
+                print(" --> Found {}".format(dataset))
+            elif (not dataset.endswith("MINIAODSIM")) and (not dataset.endswith("USER")):
+                print("Dataset {} cannot be used - must be either nano or mini!".format(dataset))
+
             pset = findPSet("topNano_{}_{}_cfg.py".format(PROD_TAG, era))
             writeCrabConfig(pset, dataset, metadata, era, crab_config, options.site, options.output)
+            print("")
