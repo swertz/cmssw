@@ -3,6 +3,7 @@ from Configuration.Eras.Modifier_run2_miniAOD_80XLegacy_cff import run2_miniAOD_
 from Configuration.Eras.Modifier_run2_nanoAOD_94XMiniAODv1_cff import run2_nanoAOD_94XMiniAODv1
 from Configuration.Eras.Modifier_run2_nanoAOD_94XMiniAODv2_cff import run2_nanoAOD_94XMiniAODv2
 from Configuration.Eras.Modifier_run2_nanoAOD_94X2016_cff import run2_nanoAOD_94X2016
+from Configuration.Eras.Modifier_run2_nanoAOD_102Xv1_cff import run2_nanoAOD_102Xv1
 
 from PhysicsTools.NanoAOD.common_cff import *
 import PhysicsTools.PatAlgos.producersLayer1.electronProducer_cfi
@@ -304,27 +305,26 @@ electronMVATTH= cms.EDProducer("EleBaseMVAValueMapProducer",
     )
 )
 
-electronMVATTV = cms.EDProducer("EleBaseMVAValueMapProducer",
+electronMVATOP = cms.EDProducer("EleBaseMVAValueMapProducer",
     src = cms.InputTag("linkedObjects","electrons"),
-    weightFile =  cms.FileInPath("PhysicsTools/NanoAOD/data/el_BDTG_TTV_2017.weights.xml"),
-    name = cms.string("electronMVATTV"),
+    weightFile =  cms.FileInPath("PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2016.weights.xml"),
+    name = cms.string("electronMVATOP"),
     isClassifier = cms.bool(True),
-    variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "electronMvaFall17NoIso"]),
+    variablesOrder = cms.vstring(["dxylog", "miniIsoCharged", "miniIsoNeutral", "pTRel", "sip3d", "mvaIdFall17v2noIso", "ptRatio", "bTagDeepJetClosestJet", "pt", "trackMultClosestJet", "etaAbs", "dzlog", "relIso"]),
     variables = cms.PSet(
-        pt = cms.string("pt"),
-        eta = cms.string("eta"),
-        trackMultClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0"),
+        dxylog = cms.string("log(abs(dB('PV2D')))"),
         miniIsoCharged = cms.string("userFloat('miniIsoChg')/pt"),
         miniIsoNeutral = cms.string("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt"),
         pTRel = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('ptRel'):0"),
-        ptRatio = cms.string("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)"),
-        relIso = cms.string("userFloat('PFIsoAll')/pt"),
-        deepCsvClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probbb'),0.0):0.0"),
         sip3d = cms.string("abs(dB('PV3D')/edB('PV3D'))"),
-        dxy = cms.string("log(abs(dB('PV2D')))"),
-        dz = cms.string("log(abs(dB('PVDZ')))"),
-        #electronMvaFall17NoIso = cms.string("userFloat('ElectronMVAEstimatorRun2Fall17NoIsoV2Values')"),
-        electronMvaFall17NoIso = cms.string("userFloat('mvaFall17V2noIso')"),
+        mvaIdFall17v2noIso = cms.string("userFloat('mvaFall17V2noIso')"),
+        ptRatio = cms.string("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)"),
+        bTagDeepJetClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0"),
+        pt = cms.string("pt"),
+        trackMultClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0"),
+        etaAbs = cms.string("abs(eta)"),
+        dzlog = cms.string("log(abs(dB('PVDZ')))"),
+        relIso = cms.string("userFloat('PFIsoAll')/pt"),
     )
 )
 
@@ -332,14 +332,11 @@ for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
     modifier.toModify(electronMVATTH,
       weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
     )
-    modifier.toModify(electronMVATTV,
-      weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_TTV_2016.weights.xml",
+run2_nanoAOD_94XMiniAODv2.toModify(electronMVATOP,
+      weightFile = "PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2017.weights.xml",
     )
-    modifier.toModify(electronMVATTV.variables,
-      electronMvaSpring16GP = cms.string("userFloat('ElectronMVAEstimatorRun2Spring16GeneralPurposeV1Values')"),
-    )
-    modifier.toModify(electronMVATTV,
-      variablesOrder = cms.vstring(["pt", "eta", "trackMultClosestJet", "miniIsoCharged", "miniIsoNeutral", "pTRel", "ptRatio", "relIso", "deepCsvClosestJet", "sip3d", "dxy", "dz", "electronMvaSpring16GP"])
+run2_nanoAOD_102Xv1.toModify(electronMVATOP,
+      weightFile = "PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2018.weights.xml",
     )
 
 electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -411,7 +408,7 @@ electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("electronMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
-        mvaTTV = ExtVar(cms.InputTag("electronMVATTV"),float, doc="TTV MVA lepton ID score",precision=14),
+        mvaTOP = ExtVar(cms.InputTag("electronMVATOP"),float, doc="TOP MVA lepton ID score",precision=14),
     ),
 )
 # scale and smearing only when available
@@ -496,7 +493,7 @@ electronMCTable = cms.EDProducer("CandMCMatchTableProducer",
 )
 
 electronSequence = cms.Sequence(bitmapVIDForEle + bitmapVIDForEleHEEP + isoForEle + ptRatioRelForEle + seedGainEle + slimmedElectronsWithUserData + finalElectrons)
-electronTables = cms.Sequence (electronMVATTH + electronMVATTV + electronTable)
+electronTables = cms.Sequence (electronMVATTH + electronMVATOP + electronTable)
 electronMC = cms.Sequence(electronsMCMatchForTable + electronMCTable)
 
 _withUpdate_sequence = cms.Sequence(slimmedElectronsUpdated + electronSequence.copy())
