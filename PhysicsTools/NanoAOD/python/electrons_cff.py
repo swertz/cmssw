@@ -431,9 +431,6 @@ for modifier in run2_nanoAOD_94X2016,:
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorr')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, doc="ratio of the calibrated energy/miniaod energy"),
     )
-    modifier.toModify(electronTable.variables,
-        mvaSpring16GP = Var("userFloat('ElectronMVAEstimatorRun2Spring16GeneralPurposeV1Values')", float, doc="MVA Spring16 GP V1"),
-    )
 
 #the94X miniAOD V2 had a bug in the scale and smearing for electrons in the E/p comb
 #therefore we redo it but but we need use a new name for the userFloat as we cant override existing userfloats
