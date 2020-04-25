@@ -320,7 +320,7 @@ electronMVATOP = cms.EDProducer("EleBaseMVAValueMapProducer",
         mvaIdFall17v2noIso = cms.string("userFloat('mvaFall17V2noIso')"),
         ptRatio = cms.string("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)"),
         bTagDeepJetClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0"),
-        pt = cms.string("pt"),
+        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorr')*userFloat('ecalTrkEnergyPreCorr')"),
         trackMultClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0"),
         etaAbs = cms.string("abs(eta)"),
         dzlog = cms.string("log(abs(dB('PVDZ')))"),
@@ -406,18 +406,18 @@ electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         #jetDeepCSV = Var("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepCSVJetTags:probbb'),0.0):0.0", float, doc="DeepCSV tag of associated jet"),
         #jetPtRatio = Var("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)", float, doc="ptRatio calculated from associated jet"),
 
-        #mva_dxylog = Var("log(abs(dB('PV2D')))", float),
-        #mva_miniIsoCharged = Var("userFloat('miniIsoChg')/pt", float),
-        #mva_miniIsoNeutral = Var("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt", float),
-        #mva_pTRel = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('ptRel'):0", float),
-        #mva_sip3d = Var("abs(dB('PV3D')/edB('PV3D'))", float),
-        #mva_ptRatio = Var("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)", float),
-        #mva_bTagDeepJetClosestJet = Var("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0", float),
-        #mva_pt = Var("pt", float),
-        #mva_trackMultClosestJet = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0", float),
-        #mva_etaAbs = Var("abs(eta)", float),
-        #mva_dzlog = Var("log(abs(dB('PVDZ')))", float),
-        #mva_relIso = Var("userFloat('PFIsoAll')/pt", float),
+        mva_dxylog = Var("log(abs(dB('PV2D')))", float),
+        mva_miniIsoCharged = Var("userFloat('miniIsoChg')/pt", float),
+        mva_miniIsoNeutral = Var("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt", float),
+        mva_pTRel = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('ptRel'):0", float),
+        mva_sip3d = Var("abs(dB('PV3D')/edB('PV3D'))", float),
+        mva_ptRatio = Var("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)", float),
+        mva_bTagDeepJetClosestJet = Var("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0", float),
+        mva_pt = Var("pt", float),
+        mva_trackMultClosestJet = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0", float),
+        mva_etaAbs = Var("abs(eta)", float),
+        mva_dzlog = Var("log(abs(dB('PVDZ')))", float),
+        mva_relIso = Var("userFloat('PFIsoAll')/pt", float),
     ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("electronMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
@@ -431,6 +431,9 @@ for modifier in run2_nanoAOD_94X2016,:
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorr')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, doc="ratio of the calibrated energy/miniaod energy"),
     )
+    modifier.toModify(electronMVATOP.variables,
+        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorr')*userFloat('ecalTrkEnergyPreCorr')"),
+    ) 
 
 #the94X miniAOD V2 had a bug in the scale and smearing for electrons in the E/p comb
 #therefore we redo it but but we need use a new name for the userFloat as we cant override existing userfloats
@@ -440,6 +443,9 @@ for modifier in run2_nanoAOD_94X2016,:
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorrNew')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorrNew')/userFloat('ecalTrkEnergyPreCorrNew')", float, doc="ratio of the calibrated energy/miniaod energy"),
 )
+(~run2_nanoAOD_94X2016).toModify(electronMVATOP.variables,
+        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorrNew')*userFloat('ecalTrkEnergyPreCorrNew')"),
+) 
 
 run2_nanoAOD_94X2016.toModify(electronTable.variables,
     cutBased_Sum16 = Var("userInt('cutbasedID_Sum16_veto')+userInt('cutbasedID_Sum16_loose')+userInt('cutbasedID_Sum16_medium')+userInt('cutbasedID_Sum16_tight')",int,doc="cut-based Summer16 ID (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)"),
