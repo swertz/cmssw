@@ -414,9 +414,6 @@ for modifier in run2_nanoAOD_94X2016,:
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorr')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, doc="ratio of the calibrated energy/miniaod energy"),
     )
-    modifier.toModify(electronMVATOP.variables,
-        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorr')*userFloat('ecalTrkEnergyPreCorr')"),
-    ) 
 
 #the94X miniAOD V2 had a bug in the scale and smearing for electrons in the E/p comb
 #therefore we redo it but but we need use a new name for the userFloat as we cant override existing userfloats
@@ -426,9 +423,6 @@ for modifier in run2_nanoAOD_94X2016,:
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorrNew')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorrNew')/userFloat('ecalTrkEnergyPreCorrNew')", float, doc="ratio of the calibrated energy/miniaod energy"),
 )
-(~run2_nanoAOD_94X2016).toModify(electronMVATOP.variables,
-        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorrNew')*userFloat('ecalTrkEnergyPreCorrNew')"),
-) 
 
 run2_nanoAOD_94X2016.toModify(electronTable.variables,
     cutBased_Sum16 = Var("userInt('cutbasedID_Sum16_veto')+userInt('cutbasedID_Sum16_loose')+userInt('cutbasedID_Sum16_medium')+userInt('cutbasedID_Sum16_tight')",int,doc="cut-based Summer16 ID (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)"),
