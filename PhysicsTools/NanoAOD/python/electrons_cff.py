@@ -3,6 +3,7 @@ from Configuration.Eras.Modifier_run2_miniAOD_80XLegacy_cff import run2_miniAOD_
 from Configuration.Eras.Modifier_run2_nanoAOD_94XMiniAODv1_cff import run2_nanoAOD_94XMiniAODv1
 from Configuration.Eras.Modifier_run2_nanoAOD_94XMiniAODv2_cff import run2_nanoAOD_94XMiniAODv2
 from Configuration.Eras.Modifier_run2_nanoAOD_94X2016_cff import run2_nanoAOD_94X2016
+from Configuration.Eras.Modifier_run2_nanoAOD_102Xv1_cff import run2_nanoAOD_102Xv1
 
 from PhysicsTools.NanoAOD.common_cff import *
 import PhysicsTools.PatAlgos.producersLayer1.electronProducer_cfi
@@ -303,10 +304,40 @@ electronMVATTH= cms.EDProducer("EleBaseMVAValueMapProducer",
         LepGood_mvaFall17V2noIso = cms.string("userFloat('mvaFall17V2noIso')"),
     )
 )
-for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
-  modifier.toModify(electronMVATTH,
-    weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
+
+electronMVATOP = cms.EDProducer("EleBaseMVAValueMapProducer",
+    src = cms.InputTag("linkedObjects","electrons"),
+    weightFile =  cms.FileInPath("PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2016.weights.xml"),
+    name = cms.string("electronMVATOP"),
+    isClassifier = cms.bool(True),
+    variablesOrder = cms.vstring(["dxylog", "miniIsoCharged", "miniIsoNeutral", "pTRel", "sip3d", "mvaIdFall17v2noIso", "ptRatio", "bTagDeepJetClosestJet", "pt", "trackMultClosestJet", "etaAbs", "dzlog", "relIso"]),
+    variables = cms.PSet(
+        dxylog = cms.string("log(abs(dB('PV2D')))"),
+        miniIsoCharged = cms.string("userFloat('miniIsoChg')/pt"),
+        miniIsoNeutral = cms.string("(userFloat('miniIsoAll')-userFloat('miniIsoChg'))/pt"),
+        pTRel = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('ptRel'):0"),
+        sip3d = cms.string("abs(dB('PV3D')/edB('PV3D'))"),
+        mvaIdFall17v2noIso = cms.string("userFloat('mvaFall17V2noIso')"),
+        ptRatio = cms.string("?userCand('jetForLepJetVar').isNonnull()?min(userFloat('ptRatio'),1.5):1.0/(1.0+userFloat('PFIsoAll04')/pt)"),
+        bTagDeepJetClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?max(userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probbb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:probb')+userCand('jetForLepJetVar').bDiscriminator('pfDeepFlavourJetTags:problepb'),0.0):0.0"),
+        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorr')*userFloat('ecalTrkEnergyPreCorr')"),
+        trackMultClosestJet = cms.string("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0"),
+        etaAbs = cms.string("abs(eta)"),
+        dzlog = cms.string("log(abs(dB('PVDZ')))"),
+        relIso = cms.string("userFloat('PFIsoAll')/pt"),
+    )
 )
+
+for modifier in run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016:
+    modifier.toModify(electronMVATTH,
+      weightFile = "PhysicsTools/NanoAOD/data/el_BDTG_2016.weights.xml",
+    )
+run2_nanoAOD_94XMiniAODv2.toModify(electronMVATOP,
+      weightFile = "PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2017.weights.xml",
+    )
+run2_nanoAOD_102Xv1.toModify(electronMVATOP,
+      weightFile = "PhysicsTools/NanoAOD/data/TMVA_BDTG_TOP_elec_2018.weights.xml",
+    )
 
 electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     src = cms.InputTag("linkedObjects","electrons"),
@@ -369,9 +400,11 @@ electronTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
         isPFcand = Var("pfCandidateRef().isNonnull()",bool,doc="electron is PF candidate"),
         seedGain = Var("userInt('seedGain')","uint8",doc="Gain of the seed crystal"),
+        jetNDauChargedMVASel = Var("?userCand('jetForLepJetVar').isNonnull()?userFloat('jetNDauChargedMVASel'):0", int, doc="jetNDauChargedMVASel"),
     ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("electronMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
+        mvaTOP = ExtVar(cms.InputTag("electronMVATOP"),float, doc="TOP MVA lepton ID score",precision=14),
     ),
 )
 # scale and smearing only when available
@@ -453,7 +486,7 @@ electronMCTable = cms.EDProducer("CandMCMatchTableProducer",
 )
 
 electronSequence = cms.Sequence(bitmapVIDForEle + bitmapVIDForEleHEEP + isoForEle + ptRatioRelForEle + seedGainEle + slimmedElectronsWithUserData + finalElectrons)
-electronTables = cms.Sequence (electronMVATTH + electronTable)
+electronTables = cms.Sequence (electronMVATTH + electronMVATOP + electronTable)
 electronMC = cms.Sequence(electronsMCMatchForTable + electronMCTable)
 
 _withUpdate_sequence = cms.Sequence(slimmedElectronsUpdated + electronSequence.copy())
