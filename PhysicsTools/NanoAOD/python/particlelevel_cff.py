@@ -90,8 +90,9 @@ genJetBFragWeightTable = cms.EDProducer("GenJetBFragWeightTableProducer",
     genJets = genJetTable.src,
     genJetsWithNu = bfragWgtProducer.src,
     cut = genJetTable.cut,
-    deltaR = cms.double(0.1),
-    precision = cms.int32(10)
+    deltaR = cms.double(0.2),
+    precision = cms.int32(10),
+    debug = cms.untracked.bool(True)
 )
 
 
