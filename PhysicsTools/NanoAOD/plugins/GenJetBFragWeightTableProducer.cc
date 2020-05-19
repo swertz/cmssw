@@ -86,7 +86,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
         ++ncand;
         std::map<std::string, float> theseWeights;
         for (const auto& wgt: outWeights) {
-            theseWeights[wgt.first] = 0.;
+            theseWeights[wgt.first] = 1.;
         }
 
         int nMatch = 0;
@@ -121,7 +121,7 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
 
             if (bestDR < deltaR_) {
                 for (const auto& wgt_handle: weightHandles) {
-                    theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
+                    theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef];
                 }
             }
         }
