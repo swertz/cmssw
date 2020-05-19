@@ -28,7 +28,8 @@ class GenJetBFragWeightTableProducer : public edm::stream::EDProducer<> {
             jetsWithNuToken_(consumes<std::vector<reco::GenJet> >(iConfig.getParameter<edm::InputTag>("genJetsWithNu"))),
             cut_(iConfig.getParameter<std::string>("cut"), true),
             deltaR_(iConfig.getParameter<double>("deltaR")),
-            precision_(iConfig.getParameter<int>("precision"))
+            precision_(iConfig.getParameter<int>("precision")),
+            debug_(iConfig.getUntrackedParameter<bool>("debug", false))
         {
             for (const auto& tag: iConfig.getParameter<std::vector<edm::InputTag>>("weightSrc")) {
                 weightsToken_.emplace(tag.instance(), consumes<edm::ValueMap<float>>(tag));
@@ -47,6 +48,7 @@ class GenJetBFragWeightTableProducer : public edm::stream::EDProducer<> {
         const StringCutObjectSelector<reco::GenJet> cut_;
         const double deltaR_;
         const int precision_;
+        const bool debug_;
         std::map<std::string, edm::EDGetTokenT<edm::ValueMap<float>> > weightsToken_;
 
 
@@ -71,50 +73,67 @@ GenJetBFragWeightTableProducer::produce(edm::Event& iEvent, const edm::EventSetu
         weightHandles.emplace(wgt_token.first, handle);
         outWeights.emplace(wgt_token.first, std::vector<float>());
     }
-    
+    if (debug_) {
+        outWeights.emplace("matchDR", std::vector<float>());
+        outWeights.emplace("matchDpT", std::vector<float>());
+        outWeights.emplace("nMatch", std::vector<float>());
+    }
+
     unsigned int ncand = 0;
     
     for (const reco::GenJet & jet : *jets) {
-      if (!cut_(jet)) continue;
-      ++ncand;
-      std::map<std::string, float> theseWeights;
-      for (const auto& wgt: outWeights) {
-        theseWeights[wgt.first] = 0.;
-      }
+        if (!cut_(jet)) continue;
+        ++ncand;
+        std::map<std::string, float> theseWeights;
+        for (const auto& wgt: outWeights) {
+            theseWeights[wgt.first] = 1.;
+        }
 
-      int bestJetIdx = -1;
-      float bestDR = 999.;
+        int nMatch = 0;
+        int bestJetIdx = -1;
+        float bestDR = 999.;
     
-      for (const reco::GenJet & jetWithNu : *jetsWithNu) {
-        edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, &jetWithNu - &(*jetsWithNu->begin()));
+        for (const reco::GenJet & jetWithNu: *jetsWithNu) {
+            edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, &jetWithNu - &(*jetsWithNu->begin()));
 
-        float matchDR = deltaR(jet.p4(), jetWithNu.p4());
+            float matchDR = deltaR(jet.p4(), jetWithNu.p4());
+            if (matchDR < deltaR_)
+                nMatch++;
 
-        if (matchDR < bestDR) {
-            bestDR = matchDR;
-            bestJetIdx = &jetWithNu - &(*jetsWithNu->begin());
+            if (matchDR < bestDR) {
+                bestDR = matchDR;
+                bestJetIdx = &jetWithNu - &(*jetsWithNu->begin());
+            }
+        } // end loop on genJetsWithNu
+            
+        if (debug_) {
+            theseWeights["matchDR"] = bestDR;
+            theseWeights["nMatch"] = nMatch;
         }
-      } // end loop on genJetsWithNu
 
-      if (bestJetIdx >= 0) {
-        //const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
-        edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
+        if (bestJetIdx >= 0) {
+            const reco::GenJet& bestJet = jetsWithNu->at(bestJetIdx);
+            if (debug_) {
+                theseWeights["matchDpT"] = bestJet.p4().Pt() - jet.p4().Pt();
+            }
 
-        if (bestDR < deltaR_) {
-          for (const auto& wgt_handle: weightHandles) {
-            theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef] - 1.;
-          }
+            edm::Ref<std::vector<reco::GenJet> > genJetRef(jetsWithNu, bestJetIdx);
+
+            if (bestDR < deltaR_) {
+                for (const auto& wgt_handle: weightHandles) {
+                    theseWeights[wgt_handle.first] = (*wgt_handle.second)[genJetRef];
+                }
+            }
         }
-      }
 
-      for (const auto& wgt_table: outWeights) {
-        outWeights[wgt_table.first].push_back(theseWeights[wgt_table.first]);
-      }
+        for (const auto& wgt_table: outWeights) {
+            outWeights[wgt_table.first].push_back(theseWeights[wgt_table.first]);
+        }
     } // end loop on genJets
 
     auto tab = std::make_unique<nanoaod::FlatTable>(ncand, name_, false, true);
     for (const auto& wgt_table: outWeights) {
-      tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight: " + wgt_table.first, nanoaod::FlatTable::FloatColumn, precision_);
+        tab->addColumn<float>(wgt_table.first, wgt_table.second, "jet fragmentation weight: " + wgt_table.first, nanoaod::FlatTable::FloatColumn, precision_);
     }
 
     iEvent.put(std::move(tab));

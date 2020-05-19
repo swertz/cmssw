@@ -15,8 +15,6 @@ matchGenBHadron = matchGenBHadron.clone(
     jetFlavourInfos = cms.InputTag("slimmedGenJetsFlavourInfos"),
 )
 
-## Plugin for analysing C hadrons
-# MUST use the same particle collection as in selectedHadronsAndPartons
 from PhysicsTools.JetMCAlgos.GenHFHadronMatcher_cff import matchGenCHadron
 matchGenCHadron = matchGenCHadron.clone(
     genParticles = cms.InputTag("prunedGenParticles"),
@@ -52,7 +50,8 @@ ttbarBHadronOriginTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     singleton = cms.bool(False),
     extension = cms.bool(True),
     externalVariables = cms.PSet(
-        nBHadFromTop = ExtVar(cms.InputTag("categorizeGenTtbar:nBHadFromTop"), int, doc="number of matched B hadrons with a top quark in their ancestry"),
+        nBHadFromT = ExtVar(cms.InputTag("categorizeGenTtbar:nBHadFromT"), int, doc="number of matched B hadrons with a top quark in their ancestry"),
+        nBHadFromTbar = ExtVar(cms.InputTag("categorizeGenTtbar:nBHadFromTbar"), int, doc="number of matched B hadrons with an anti-top quark in their ancestry"),
         nBHadFromW = ExtVar(cms.InputTag("categorizeGenTtbar:nBHadFromW"), int, doc="number of matched B hadrons with a W boson in their ancestry"),
         nBHadOther = ExtVar(cms.InputTag("categorizeGenTtbar:nBHadOther"), int, doc="number of matched B hadrons with no W boson or top quark in their ancestry"),
         nCHadFromW = ExtVar(cms.InputTag("categorizeGenTtbar:nCHadFromW"), int, doc="number of matched prompt (no intermediate B) C hadrons with a W boson in their ancestry"),

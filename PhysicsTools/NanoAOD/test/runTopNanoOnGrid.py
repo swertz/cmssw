@@ -68,11 +68,12 @@ def create_default_config():
     config.JobType.allowUndistributedCMSSW = True # for slc7
 
     config.JobType.pluginName = 'Analysis'
-    config.JobType.maxMemoryMB = 2500
+    config.JobType.maxMemoryMB = 5000
+    config.JobType.numCores = 2
 
     config.Data.inputDBS = 'global'
     config.Data.splitting = 'EventAwareLumiBased'
-    config.Data.unitsPerJob = 800000
+    config.Data.unitsPerJob = 180000
     config.Data.publication = True
 
     return config

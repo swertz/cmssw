@@ -54,45 +54,46 @@ rivetProducerHTXS = cms.EDProducer('HTXSRivetProducer',
 )
 
 ## b fragmentation weights: needs particle-level jets with neutrinos
-particleLevelWithNeutrinos = cms.EDProducer("ParticleLevelProducer",
-    src = cms.InputTag("genParticles2HepMC:unsmeared"),
-    
-    usePromptFinalStates = cms.bool(True), # for leptons, photons, neutrinos
-    excludePromptLeptonsFromJetClustering = cms.bool(False),
-    excludeNeutrinosFromJetClustering = cms.bool(False),
-    
-    particleMinPt  = cms.double(0.),
-    particleMaxEta = cms.double(5.), # HF range. Maximum 6.0 on MiniAOD
-    
-    lepConeSize = cms.double(0.1), # for photon dressing
-    lepMinPt    = cms.double(15.),
-    lepMaxEta   = cms.double(2.5),
-    
-    jetConeSize = cms.double(0.4),
-    jetMinPt    = cms.double(10.),
-    jetMaxEta   = cms.double(999.),
-    
-    fatJetConeSize = cms.double(0.8),
-    fatJetMinPt    = cms.double(170.),
-    fatJetMaxEta   = cms.double(999.),
-)
+# particleLevelWithNeutrinos = cms.EDProducer("ParticleLevelProducer",
+#     src = cms.InputTag("genParticles2HepMC:unsmeared"),
 
-bfragWgtProducer = cms.EDProducer('BFragmentationWeightProducer',
-    cfg = cms.FileInPath('TopQuarkAnalysis/BFragmentationAnalyzer/data/bfragweights.root'),
-    src = cms.InputTag("particleLevelWithNeutrinos:jets")
-)
+#     usePromptFinalStates = cms.bool(True), # for leptons, photons, neutrinos
+#     excludePromptLeptonsFromJetClustering = cms.bool(False),
+#     excludeNeutrinosFromJetClustering = cms.bool(False),
 
-genJetBFragWeightTable = cms.EDProducer("GenJetBFragWeightTableProducer",
-    name = genJetTable.name,
-    weightSrc = cms.VInputTag(*[
-        cms.InputTag("bfragWgtProducer", variation) for variation in ["PetersonFrag", "upFrag", "centralFrag", "downFrag", "semilepbrUp", "semilepbrDown"]
-    ]),
-    genJets = genJetTable.src,
-    genJetsWithNu = bfragWgtProducer.src,
-    cut = genJetTable.cut,
-    deltaR = cms.double(0.1),
-    precision = cms.int32(10)
-)
+#     particleMinPt  = cms.double(0.),
+#     particleMaxEta = cms.double(5.), # HF range. Maximum 6.0 on MiniAOD
+
+#     lepConeSize = cms.double(0.1), # for photon dressing
+#     lepMinPt    = cms.double(15.),
+#     lepMaxEta   = cms.double(2.5),
+
+#     jetConeSize = cms.double(0.4),
+#     jetMinPt    = cms.double(10.),
+#     jetMaxEta   = cms.double(999.),
+
+#     fatJetConeSize = cms.double(0.8),
+#     fatJetMinPt    = cms.double(170.),
+#     fatJetMaxEta   = cms.double(999.),
+# )
+
+# bfragWgtProducer = cms.EDProducer('BFragmentationWeightProducer',
+#     cfg = cms.FileInPath('TopQuarkAnalysis/BFragmentationAnalyzer/data/bfragweights.root'),
+#     src = cms.InputTag("particleLevelWithNeutrinos:jets")
+# )
+
+# genJetBFragWeightTable = cms.EDProducer("GenJetBFragWeightTableProducer",
+#     name = genJetTable.name,
+#     weightSrc = cms.VInputTag(*[
+#         cms.InputTag("bfragWgtProducer", variation) for variation in ["PetersonFrag", "upFrag", "centralFrag", "downFrag", "semilepbrUp", "semilepbrDown"]
+#     ]),
+#     genJets = genJetTable.src,
+#     genJetsWithNu = bfragWgtProducer.src,
+#     cut = genJetTable.cut,
+#     deltaR = cms.double(0.2),
+#     precision = cms.int32(14),
+#     debug = cms.untracked.bool(True)
+# )
 
 
 ##################### Tables for final output and docs ##########################
@@ -192,5 +193,7 @@ HTXSCategoryTable = cms.EDProducer("SimpleHTXSFlatTableProducer",
 )
 
 
-particleLevelSequence = cms.Sequence(mergedGenParticles + genParticles2HepMC + particleLevel + tautagger + genParticles2HepMCHiggsVtx + rivetProducerHTXS + particleLevelWithNeutrinos + bfragWgtProducer )
-particleLevelTables = cms.Sequence(rivetLeptonTable + rivetMetTable + HTXSCategoryTable + genJetBFragWeightTable )
+particleLevelSequence = cms.Sequence(mergedGenParticles + genParticles2HepMC + particleLevel + tautagger + genParticles2HepMCHiggsVtx + rivetProducerHTXS)
+particleLevelTables = cms.Sequence(rivetLeptonTable + rivetMetTable + HTXSCategoryTable)
+# particleLevelSequence = cms.Sequence(mergedGenParticles + genParticles2HepMC + particleLevel + tautagger + genParticles2HepMCHiggsVtx + rivetProducerHTXS + particleLevelWithNeutrinos + bfragWgtProducer )
+# particleLevelTables = cms.Sequence(rivetLeptonTable + rivetMetTable + HTXSCategoryTable + genJetBFragWeightTable )

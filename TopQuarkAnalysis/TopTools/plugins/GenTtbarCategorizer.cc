@@ -148,7 +148,7 @@ genCHadFromTopWeakDecayToken_(consumes<std::vector<int> >(iConfig.getParameter<e
 genCHadBHadronIdToken_(consumes<std::vector<int> >(iConfig.getParameter<edm::InputTag>("genCHadBHadronId")))
 {
     produces<int>("genTtbarId");
-    addBranches_ = { "nBHadFromTop", "nBHadFromW", "nBHadOther", "nCHadFromW", "nCHadOther" };
+    addBranches_ = { "nBHadFromT", "nBHadFromTbar", "nBHadFromW", "nBHadOther", "nCHadFromW", "nCHadOther" };
     for (const std::string& br: addBranches_)
         produces<edm::ValueMap<int>>(br);
 }
@@ -244,7 +244,10 @@ GenTtbarCategorizer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         if(std::abs(flavour) == 6) {
             if(bJetFromTopIds.count(jetIndex) < 1) bJetFromTopIds[jetIndex] = 1;
             else bJetFromTopIds[jetIndex]++;
-            countMap["nBHadFromTop"][jetIndex]++;
+            if (flavour > 0)
+                countMap["nBHadFromT"][jetIndex]++;
+            else
+                countMap["nBHadFromTbar"][jetIndex]++;
             continue;
         }
         // Jet from W->b decay [pdgId(W)=24]
