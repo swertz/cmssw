@@ -415,6 +415,10 @@ for modifier in run2_nanoAOD_94X2016,:
         eCorr = Var("userFloat('ecalTrkEnergyPostCorr')/userFloat('ecalTrkEnergyPreCorr')", float, doc="ratio of the calibrated energy/miniaod energy"),
     )
 
+    modifier.toModify(electronMVATOP.variables,
+                      pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorr')*userFloat('ecalTrkEnergyPreCorr')"),
+    )
+
 #the94X miniAOD V2 had a bug in the scale and smearing for electrons in the E/p comb
 #therefore we redo it but but we need use a new name for the userFloat as we cant override existing userfloats
 #for technical reasons
@@ -422,6 +426,10 @@ for modifier in run2_nanoAOD_94X2016,:
         pt = Var("pt*userFloat('ecalTrkEnergyPostCorrNew')/userFloat('ecalTrkEnergyPreCorrNew')", float, precision=-1, doc="p_{T}"),
         energyErr = Var("userFloat('ecalTrkEnergyErrPostCorrNew')", float, precision=6, doc="energy error of the cluster-track combination"),
         eCorr = Var("userFloat('ecalTrkEnergyPostCorrNew')/userFloat('ecalTrkEnergyPreCorrNew')", float, doc="ratio of the calibrated energy/miniaod energy"),
+)
+
+(~run2_nanoAOD_94X2016).toModify(electronMVATOP.variables,
+        pt = cms.string("pt/userFloat('ecalTrkEnergyPostCorrNew')*userFloat('ecalTrkEnergyPreCorrNew')"),
 )
 
 run2_nanoAOD_94X2016.toModify(electronTable.variables,
