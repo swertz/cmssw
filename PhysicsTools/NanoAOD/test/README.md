@@ -53,6 +53,7 @@ More information about publication [here](https://twiki.cern.ch/twiki/bin/view/C
     - TOP lepton MVA
     - Store NNPDF3.1 weights when available (instead of PDF4LHC)
     - PS weights storage fixed as in [this PR](https://github.com/cms-nanoAOD/cmssw/pull/506)
+    - Origin of B and C hadron ghost-matched to genJets
     - [Auto-generated documentation](https://swertz.web.cern.ch/swertz/TMG/TopNano/TopNanoV6p1/doc_topNanoV6p1.html)
     - [Size report](https://swertz.web.cern.ch/swertz/TMG/TopNano/TopNanoV6p1/report_topNanoV6p1.html)
     - [Full code changes](https://github.com/cms-top/cmssw/compare/CMSSW_10_2_18...topNanoV6p1_10_2_18)
