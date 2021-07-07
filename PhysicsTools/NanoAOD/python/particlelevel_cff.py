@@ -63,7 +63,6 @@ bfragWgtProducer = _bfragWgtProducer.clone(src=cms.InputTag("particleLevelWithNe
 
 bFragWeights = []
 # bFragWeights += [ cms.InputTag("bfragWgtProducer", variation) for variation in bfragWgtProducer.frag_weights ] # pt-averaged weights, not included by default
-bFragWeights += [ cms.InputTag("bfragWgtProducer", variation) for variation in bfragWgtProducer.br_weights ]
 bFragWeights += [ cms.InputTag("bfragWgtProducer", variation + "VsPt") for variation in bfragWgtProducer.frag_weights_vs_pt ]
 # match particle-level jets w/neutrinos with "regular" genJets, extend genJet table with fragmentation weights
 genJetBFragWeightTable = cms.EDProducer("GenJetBFragWeightTableProducer",
